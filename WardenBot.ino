@@ -12,6 +12,14 @@ const int MIC_PIN_2 = A1; // Analog pin A1
 const int TRIG_PIN = 9; // Digital pin 9
 const int ECHO_PIN = 10; // Digital pin 10
 
+// Constants relating to the H-Bridge (i.e. L298N)
+const int IN1 = 13; // Motor 1
+const int IN2 = 12; // Motor 1
+const int IN3 = 8; // Motor 2
+const int IN4 = 7; // Motor 2
+const int ENGINE_A = 3; // To control motor 1 speed
+const int ENGINE_B = 11; // To control motor 2 speed
+
 /*
 -------------------------------
   SETUP
@@ -33,7 +41,12 @@ void setup() {
 -------------------------------
 */
 
-void MicrophoneFunction(){
+int MicrophoneFunction(){
+
+  // Center = 0
+  // Left = 1
+  // Right = 2
+  int direction = 0;
 
   // use constant to define threshold amplitude (Used to filter background noise)
   const int AMPLITUDE_THRESHOLD = 0;
@@ -58,7 +71,17 @@ void MicrophoneFunction(){
 
     // Comparing the new value read from microphone 2 with the currently stored maximum & minimum
     min_vol_mic2 = min(min_vol_mic2, vol_reading_mic2); 
-    max_vol_mic2 = max(max_vol_mic2, vol_reading_mic2); 
+    max_vol_mic2 = max(max_vol_mic2, vol_reading_mic2);
+
+    // -----Debugging------
+
+    // Serial.print("Left:");
+    // Serial.print(vol_reading_mic1);
+    // Serial.print("\tRight:");
+    // Serial.println(vol_reading_mic2);
+    //delay(200);
+
+    // --------------------
 
   }
 
@@ -70,17 +93,24 @@ void MicrophoneFunction(){
 
   // Output mic results
   Serial.print("--------------------------------------------\n");
-  Serial.print("Difference between Amplitudes ="); // For debugging purposes
-  Serial.println(amplitude_difference);
+  // Serial.print("Amp1 = ");
+  // Serial.println(amplitude_mic1);
+  // Serial.print("Amp2 = ");
+  // Serial.println(amplitude_mic2);
+  //Serial.print("Difference between Amplitudes ="); // For debugging purposes
+  //Serial.println(amplitude_difference);
 
-  if (amplitude_difference < AMPLITUDE_THRESHOLD){
-    Serial.println("sound is coming from: CENTER");
+  if (amplitude_difference <= AMPLITUDE_THRESHOLD){
+    //Serial.println("sound is coming from: CENTER");
+    return 0;
   }
   else if(amplitude_difference > AMPLITUDE_THRESHOLD && amplitude_mic1 > amplitude_mic2){
-    Serial.println("sound is coming from: RIGHT");
+    //Serial.println("sound is coming from: LEFT");
+    return 1;
   }
   else{
-    Serial.println("sound is coming from: LEFT");
+    //Serial.println("sound is coming from: RIGHT");
+    return 2;
   }
 
 }
@@ -91,7 +121,7 @@ void MicrophoneFunction(){
 -------------------------------
 */
 
-void UltrasonicFunction(){
+float UltrasonicFunction(){
   long duration;
   float distance;
   
@@ -108,12 +138,36 @@ void UltrasonicFunction(){
 
   distance = (duration * 0.0343) / 2; // Calculate the distance (speed of sound = 343 m/s or 0.0343 cm/µs)
 
-  // Print the distance to the Serial Monitor
+  //Print the distance to the Serial Monitor
   Serial.print("Distance: ");
   Serial.print(distance);
   Serial.println(" cm");
 
   delay(100); // Wait before the next measurement
+
+  return distance;
+}
+
+/*
+-------------------------------
+  MOTORS
+-------------------------------
+*/
+void MotorFunction(float distance, int direction){
+  if(distance <= 10){
+    Serial.println("Too close! STOP!");
+  }
+  
+  if(direction == 0){
+    Serial.println("Don't turn");
+
+  }
+  else if(direction == 1){
+    Serial.println("Turn LEFT");
+  }
+  else if(direction == 2){
+    Serial.println("Turn RIGHT");
+  }
 }
 
 /*
@@ -123,8 +177,7 @@ void UltrasonicFunction(){
 */
 
 void loop() {
-  MicrophoneFunction();
-  UltrasonicFunction();
+  int direction = MicrophoneFunction();
+  float distance = UltrasonicFunction();
+  MotorFunction(distance, direction);
 }
-
-
